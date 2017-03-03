@@ -1,4 +1,4 @@
-#We are treating multiple study domains as a preprocessing consideration to compact out into simple integer domains
+ #We are treating multiple study domains as a preprocessing consideration to compact out into simple integer domains
 import orderedset as oset
 from seqpattern import Pattern
 from dbpointer import DBPointer
@@ -33,6 +33,10 @@ def __parse_db__(db):
 def __parse_options__(options):
     assert 'threshold' in options
     assert isinstance( options['threshold'], ( int, long ) )
+
+    options['Pattern'] = Pattern
+    options['DBPointer'] = DBPointer
+    
     return options
 
 def __ffi__(support, itembag):
@@ -79,8 +83,8 @@ def prefixspan(u_db, u_options):
     options = __parse_options__(u_options)
     candidates = __ffi__(options['threshold'], ibag)
     db = map(lambda seq: map(lambda iset: filter(lambda x: x in candidates, iset), seq), p_db)
-    pointerdb = [DBPointer(z_id, db) for z_id in range(len(db))]
-    candidates = list(map(lambda x: Pattern().assemble(x), candidates))
+    pointerdb = [options['DBPointer'](z_id, db) for z_id in range(len(db))]
+    candidates = list(map(lambda x: options['Pattern']().assemble(x), candidates))
     freqpatterns = []
     for atomicseq in candidates:
             __prefixspan__(pointerdb, atomicseq, options, freqpatterns)
