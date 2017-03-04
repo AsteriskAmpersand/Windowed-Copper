@@ -1,4 +1,4 @@
-import orderedset as oset
+#import orderedset as oset
 import copy as copymodule
 
 class Pattern(object):

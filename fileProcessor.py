@@ -81,8 +81,9 @@ if __name__ == '__main__':
     end = time.time()
     print len(res)
     print(end - start)
-    out = open('Results','w')
+    out = open('Results.txt','w')
     for pat in res:
         out.write(str(pat)+'\n')
     out.close()
+    print options
     

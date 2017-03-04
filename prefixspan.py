@@ -1,7 +1,7 @@
  #We are treating multiple study domains as a preprocessing consideration to compact out into simple integer domains
-import orderedset as oset
 from seqpattern import Pattern
-from dbpointer import DBPointer
+from dbpointer import DBPointer, CopperPointer, WindowGapPointer
+from infinity import Infinity
 
 def __parse_db__(db):
     """Takes a list of strings in the expected format and parses them into the db, a converter from zone to zone_id
@@ -16,7 +16,7 @@ def __parse_db__(db):
         if i[0] not in zone2int:
             zone2int[i[0]]=len(zone2int)
         for itemset in i[1:]:
-            iset = oset.OrderedSet()
+            iset = set()#!
             for item in itemset.split('|'):
                 if item:
                     sequencebag.add(int(item))
@@ -33,10 +33,33 @@ def __parse_db__(db):
 def __parse_options__(options):
     assert 'threshold' in options
     assert isinstance( options['threshold'], ( int, long ) )
-
+    #Standard prefixspan
     options['Pattern'] = Pattern
     options['DBPointer'] = DBPointer
-    
+    #COPPER
+    if any( param in options for param in ['logic', 'minSseq','maxSseq','minSize','maxSize']):
+        options['DBPointer'] = CopperPointer
+        if 'logic' not in options:
+            options['logic'] = lambda x: True #Shunting yard and more compelx functionality missing
+        if 'minSseq' not in options:
+            options['minSseq'] = 0
+        if 'maxSseq' not in options:
+            options['maxSseq'] = Infinity()
+        if 'minSize' not in options:
+            options['minSize'] = 0
+        if 'maxSize' not in options:
+            options['maxSize'] = Infinity()
+    #Window
+    if any( param in options for param in ['window','gap']):
+        options['DBPointer'] = WindowGapPointer
+        if 'gap' in options:
+            options['gap'] = lambda x, y: map(lambda z: [z, z+options['gap']+1], x)
+        else:
+            options['gap'] = lambda x, y: [x[0], y]
+        if 'window' in options:
+            options['window'] = lambda x, y: map(lambda z: [z, z+options['window']+1], x)
+        else:
+            options['window'] = lambda x, y: [x[0], y]
     return options
 
 def __ffi__(support, itembag):
@@ -88,5 +111,7 @@ def prefixspan(u_db, u_options):
     freqpatterns = []
     for atomicseq in candidates:
             __prefixspan__(pointerdb, atomicseq, options, freqpatterns)
+    if 'logic' in options:
+        freqpatterns = list(filter(lambda x: options['logic'](x) and options['minSize']<=len(x) and options['minSseq']<=x.size(), freqpatterns))
     return freqpatterns
     
