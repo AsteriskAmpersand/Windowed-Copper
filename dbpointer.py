@@ -1,4 +1,4 @@
-#import copy as copymodule
+import copy as copymodule
 import itertools
 
 class DBPointer(object):
@@ -12,11 +12,13 @@ class DBPointer(object):
         new = DBPointer(self.__entry__, self.__origin__)
         return new
         
-    def project(self, pattern):
+    def project(self, pattern, options):
         result = self.partialcopy()
         result.__last__ = pattern.last()
         if pattern.appended():
-            result.__positions__ = result.__positions__ = [index+self.__positions__[0]+1 for index, itemset in enumerate(self.__origin__[self.__entry__][self.__positions__[0]+1:]) if pattern.last() in itemset]
+            result.__positions__ = [index+self.__positions__[0]+1
+                                            for index, itemset in enumerate(self.__origin__[self.__entry__][self.__positions__[0]+1:])
+                                            if pattern.last() in itemset]
         else:
             result.__positions__ = list(filter(lambda pos: pattern.last() in self.__origin__[result.__entry__][pos]
                                                 , self.__positions__))
@@ -76,9 +78,9 @@ def __intervaln__(intervallist1, intervallist2):
     if not(intervallist1 and intervallist2):
         return result
     if (intervallist1[0][0]<intervallist2[0][0])and(intervallist1[0][1]>intervallist2[-1][1]):
-        return intervallist1
+        return intervallist2
     if (intervallist2[0][0]<intervallist1[0][0])and(intervallist2[0][1]>intervallist1[-1][1]):
-        return intervallist2       
+        return intervallist1       
     j = 0 if intervallist1[0][0] < intervallist2 [0][0] else 1
     q = (j+1)%2
     i=(__IntervalPointer__(intervallist1), __IntervalPointer__(intervallist2))
@@ -93,7 +95,9 @@ def __intervaln__(intervallist1, intervallist2):
             if i[j][1]<i[q][1]:
                 j,q = q,j
             i[q].next()
-            
+    if result:
+        assert result[0][0]>=intervallist1[0][0]
+        assert result[0][0]>=intervallist2[0][0]
     return result
     
 
@@ -101,29 +105,45 @@ class WindowGapPointer(DBPointer):
     def __init__(self, zid, db):
         DBPointer.__init__(self, zid, db)
         self.__progenitor__ = []
-        self.__previous__ = []
         
     def partialcopy(self):
         new = WindowGapPointer(self.__entry__, self.__origin__)
+        new.__progenitor__ = self.__progenitor__
         return new
-    
-    def project(self, pattern):
-        result = DBPointer.project(self, pattern)
+#RETHINK ALL OF THIS!    
+    def project(self, pattern, options):
+        if self.__last__ == -1:
+            result = DBPointer.project(self, pattern, options)
+            return result
+        result = self.partialcopy()
+        result.__last__ = pattern.last()
         if pattern.appended():
             if not self.__progenitor__:
                 result.__progenitor__ = self.__positions__
-            result.__previous__ = self.__positions__
+            ranges = __intervaln__(__intervalu__(options['window'](result.__progenitor__, len(self.__origin__[self.__entry__]))),
+                                      __intervalu__(options['gap'](self.__positions__, len(self.__origin__[self.__entry__]))))
+            rangeiter = itertools.chain.from_iterable((range(interval[0], interval[1]) for interval in ranges))
+            result.__positions__ = [index
+                                        for index, itemset in ((pos, self.__origin__[self.__entry__][pos]) for pos in rangeiter)
+                                        if pattern.last() in itemset]
+        else:
+            result.__positions__ = list(filter(lambda pos: pattern.last() in self.__origin__[result.__entry__][pos]
+                                                , self.__positions__))
         return result
 
     def appendcandidates(self, options):
         candidates = set()
-        ranges = __intervaln__(__intervalu__(options['window'](self.__progenitor__, len(self.__origin__[self.__entry__]))),
-                      __intervalu__(options['gap'](self.__previous__, len(self.__origin__[self.__entry__]))))
-        ranges = itertools.chain.from_iterable((range(max(interval[0],self.__positions__[0]+1), min(interval[1],len(self.__origin__[self.__entry__]))) for interval in ranges))
-        for itemset in ranges:
-            for item in itemset:
+        progenitor = self.__progenitor__
+        if not progenitor:
+            progenitor = self.__positions__
+        ranges = __intervaln__(__intervalu__(options['window'](progenitor, len(self.__origin__[self.__entry__]))),
+                                  __intervalu__(options['gap'](self.__positions__, len(self.__origin__[self.__entry__]))))
+        rangeiter = itertools.chain.from_iterable((range(interval[0], min(interval[1],len(self.__origin__[self.__entry__]))) for interval in ranges))
+        for pos in rangeiter:
+            for item in self.__origin__[self.__entry__][pos]:
                 candidates.add(item)
         return candidates
+#UP UNTIL HERE
         
 class CopperPointer (DBPointer):
     def __init__(self, zid, db):
@@ -134,19 +154,19 @@ class CopperPointer (DBPointer):
         new = CopperPointer(self.__entry__, self.__origin__)
         return new
 
-    def project(self, pattern):
-        result = DBPointer.project(self, pattern)
+    def project(self, pattern, options):
+        result = DBPointer.project(self, pattern, options)
         result.__pattern__ = pattern
         return result
     
     def appendcandidates(self, options):
         candidates = []
-        if self.__pattern__.size()>=options['minSseq'] and len(self.__pattern__)<=options['maxSize']:
+        if self.__pattern__.size()>=options['minSseq'] and len(self.__pattern__)<options['maxSize']:
             candidates = DBPointer.appendcandidates(self, options)
         return candidates
                  
     def assemblecandidates(self,options):
         candidates = []
-        if self.__pattern__.size()<=options['maxSseq']:
+        if self.__pattern__.size()<options['maxSseq']:
             candidates = DBPointer.assemblecandidates(self, options)
-        return candidates
+        return candidates    

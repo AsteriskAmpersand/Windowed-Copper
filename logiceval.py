@@ -40,17 +40,19 @@ def posttotree(postfixChain):
     return stack.pop()
 
 def dictionaryeval(dictionary, token):
-    if ':' in token:
+    return token in dictionary
+'''    if ':' in token:
         var, val = token.split(':')
         return var in dictionary and val in dictionary[var]
     else:
-        return token in dictionary
+        return token in dictionary'''
 
 class Tree:
     def __init__(self, root, lLeaf=None, rLeaf=None):
         self.root = root
         self.left = lLeaf
         self.right = rLeaf
+        
     def evaluate(self, dictionary):
         if self.left:
             l = self.left.evaluate()
@@ -63,8 +65,10 @@ class Tree:
                 return l and r
             if token == '|':
                 return l or r
+            
     def __nonzero__(self):
         return bool(self.root)
+    
     def show(self):
         if self.left:
             return '('+self.left.show()+str(self.root)+self.right.show()+')'

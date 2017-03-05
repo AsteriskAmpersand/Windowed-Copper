@@ -2,6 +2,7 @@
 from seqpattern import Pattern
 from dbpointer import DBPointer, CopperPointer, WindowGapPointer
 from infinity import Infinity
+import logiceval
 
 def __parse_db__(db):
     """Takes a list of strings in the expected format and parses them into the db, a converter from zone to zone_id
@@ -40,7 +41,9 @@ def __parse_options__(options):
     if any( param in options for param in ['logic', 'minSseq','maxSseq','minSize','maxSize']):
         options['DBPointer'] = CopperPointer
         if 'logic' not in options:
-            options['logic'] = lambda x: True #Shunting yard and more compelx functionality missing
+            options['logic'] = lambda x: True
+        else:
+            options['logic'] = logiceval.evaluator(options['logic'])
         if 'minSseq' not in options:
             options['minSseq'] = 0
         if 'maxSseq' not in options:
@@ -53,13 +56,15 @@ def __parse_options__(options):
     if any( param in options for param in ['window','gap']):
         options['DBPointer'] = WindowGapPointer
         if 'gap' in options:
-            options['gap'] = lambda x, y: map(lambda z: [z, z+options['gap']+1], x)
+            gap = options['gap']+1
+            options['gap'] = lambda x, y: map(lambda z: [z+1, min(z+gap+1, y)], x)
         else:
-            options['gap'] = lambda x, y: [x[0], y]
+            options['gap'] = lambda x, y: [[x[0]+1, y]]
         if 'window' in options:
-            options['window'] = lambda x, y: map(lambda z: [z, z+options['window']+1], x)
+            window = options['window']
+            options['window'] = lambda x, y: map(lambda z: [z+1, min(z+window+1, y)], x)
         else:
-            options['window'] = lambda x, y: [x[0], y]
+            options['window'] = lambda x, y: [[0, y]]
     return options
 
 def __ffi__(support, itembag):
@@ -77,12 +82,12 @@ def __itembag_merge__(itembaglist):#MISSING CODE
     return mergedbag
 
 def __prefixspan__(u_pointerdb, u_pattern, options, freqpatterns):
-    freqpatterns.append(u_pattern)
     #Projection
     pointerdb = []
-    for entry in (entry.project(u_pattern) for entry in u_pointerdb):   
+    for entry in (entry.project(u_pattern, options) for entry in u_pointerdb):   
         if entry:                                                       
-            pointerdb.append(entry)                                         
+            pointerdb.append(entry)
+    freqpatterns.append([u_pattern, len(pointerdb)])
     #Assemble - Get assemble candidates
     candidates = __itembag_merge__(map(lambda e: e.assemblecandidates(options), pointerdb))
     assemblings = filter(lambda i: candidates[i]>=options['threshold'], candidates)

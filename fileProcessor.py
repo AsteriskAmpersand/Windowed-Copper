@@ -70,20 +70,21 @@ import math
 sys.setrecursionlimit(10000)
 
 if __name__ == '__main__':
-    u_db = open('C10T8S8I8.txt', 'r')
+    u_db = open('C01T5S250I003SP5.txt', 'r')#C10T8S8I8
     s_db = asciiFormater(u_db)
-    ratio = 0.003
-    options = {'threshold':int(math.ceil(len(s_db)*ratio))}
-    print int(math.ceil(len(s_db)*ratio))
-    print "GO!"
+    ratio = 0.75#0.003
+    options = {'threshold':int(math.ceil(len(s_db)*ratio)), 'gap':2, 'window':10}
+    string = '' if 'window' not in options else 'Window'
+    string += '' if 'gap' not in options else 'Gap'
+    print "Min Support: "+str(int(math.ceil(len(s_db)*ratio)))
     start = time.time()
     res = ps.prefixspan(s_db, options)
     end = time.time()
-    print len(res)
-    print(end - start)
-    out = open('Results.txt','w')
-    for pat in res:
+    print "Patterns Found: " + str(len(res))
+    print "Time Taken: " + str(end - start)
+    out = open('Results'+string+'.txt','w')
+    for pat in sorted(res, key=lambda x: x[1]):
         out.write(str(pat)+'\n')
     out.close()
-    print options
+    print "Options Used: " + str(options)
     

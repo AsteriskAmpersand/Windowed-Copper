@@ -1,5 +1,6 @@
 #import orderedset as oset
 import copy as copymodule
+from itertools import chain
 
 class Pattern(object):
     def __init__(self):
@@ -39,6 +40,9 @@ class Pattern(object):
 
     def contained(self, itemset):
         return all((item in itemset for item in self.__head__))
+
+    def project(self):
+        return set(chain.from_iterable(self.__tail__+[self.__head__]))
             
     def __len__(self):
         return len(self.__tail__) + bool(self.__head__)
