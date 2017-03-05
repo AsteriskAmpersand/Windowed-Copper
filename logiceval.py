@@ -1,3 +1,14 @@
+"""
+Module for the Logical evaluation functionality of COPPER using ShuntingYard to
+Postfix notation and an evaluation tree to finally obtain a function that takes
+a pattern and returns if it fulfills the logical condition given on the generating
+options.
+
+Author: Agustin Guevara-Cogorno
+Contact Details: a.guevarac@up.edu.pe
+Institution: Universidad del Pacifico|University of the Pacific
+"""
+
 def evaluator(logicalExpresion):
     tokenizedExpression = filter(lambda x: x, logicalExpresion.replace(' ','').replace('&',"\0&\0").replace(')',"\0)\0").replace('(',"\0(\0").replace('|',"\0|\0").split("\0"))
     evalTree = posttotree(shuntingyard(tokenizedExpression))

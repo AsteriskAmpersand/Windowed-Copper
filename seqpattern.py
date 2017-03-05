@@ -1,4 +1,10 @@
-#import orderedset as oset
+"""
+Sequential pattern class for use with the prefixspan algorithm.
+
+Author: Agustin Guevara-Cogorno
+Contact Details: a.guevarac@up.edu.pe
+Institution: Universidad del Pacifico|University of the Pacific
+"""
 import copy as copymodule
 from itertools import chain
 

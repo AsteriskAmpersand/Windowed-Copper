@@ -1,3 +1,13 @@
+"""
+Pointer to Database class for use with Prefixspan.
+Different classes correspond to different functionality and capabilities.
+DBPointer - Prefixspan, CopperPointer - COPPER, WindowGap - Window/Gap
+WinCop - Combined Copper and WindowGap
+
+Author: Agustin Guevara-Cogorno
+Contact Details: a.guevarac@up.edu.pe
+Institution: Universidad del Pacifico|University of the Pacific
+"""
 import copy as copymodule
 import itertools
 
@@ -6,7 +16,7 @@ class DBPointer(object):
         self.__origin__ = db
         self.__entry__ = zid
         self.__positions__ = [-1]
-        self.__last__ = -1 #replaceable by passing pattern to the candidate searchers
+        self.__last__ = -1
 
     def partialcopy(self):
         new = DBPointer(self.__entry__, self.__origin__)

@@ -1,4 +1,12 @@
- #We are treating multiple study domains as a preprocessing consideration to compact out into simple integer domains
+"""
+Implementation of Jiawei Han, Jian Pei, Behzad Mortazavi-Asl, Helen Pinto, Qiming Chen, Umeshwar Dayal, MC Hsu, Prefixspan Algorithm (http://jayurbain.com/msoe/cs498-datamining/prefixspan_mining_sequential_patterns_by_prefix_projected_growth.pdf) in Python.
+With additional capabilities added from Guevara-Cogorno, Flamand, Alatrista Salas, COPPER Paper (http://www.sciencedirect.com/science/article/pii/S1877050915024990)
+and Window/Time Gap Capabilities added.
+
+Author: Agustin Guevara-Cogorno
+Contact Details: a.guevarac@up.edu.pe
+Institution: Universidad del Pacifico|University of the Pacific
+"""
 from seqpattern import Pattern
 from dbpointer import DBPointer, CopperPointer, WindowGapPointer
 from infinity import Infinity
@@ -32,6 +40,7 @@ def __parse_db__(db):
     return parseddb, zone2int, itembag
 
 def __parse_options__(options):
+    """Parses options and checks the minimum set of options is present. Selects the correct classes for each version of the algorithm."""
     assert 'threshold' in options
     assert isinstance( options['threshold'], ( int, long ) )
     #Standard prefixspan
@@ -65,13 +74,17 @@ def __parse_options__(options):
             options['window'] = lambda x, y: map(lambda z: [z+1, min(z+window+1, y)], x)
         else:
             options['window'] = lambda x, y: [[0, y]]
+    #WinCopper
+    if 'logic' in options and 'gap' in options:
+        options['DBPointer'] = WinCopPointer
     return options
 
 def __ffi__(support, itembag):
     """Returns frequent items from the itembag given support and itembag"""
     return [i for i in itembag if itembag[i]>=support]
 
-def __itembag_merge__(itembaglist):#MISSING CODE
+def __itembag_merge__(itembaglist):
+    """Merges Multiple itembags while keeping count in how many a given item appears"""
     mergedbag = {}
     for bag in itembaglist:
         for item in bag:
@@ -82,6 +95,7 @@ def __itembag_merge__(itembaglist):#MISSING CODE
     return mergedbag
 
 def __prefixspan__(u_pointerdb, u_pattern, options, freqpatterns):
+    """Prefixspan proper recursive call"""
     #Projection
     pointerdb = []
     for entry in (entry.project(u_pattern, options) for entry in u_pointerdb):   
@@ -106,7 +120,7 @@ def __prefixspan__(u_pointerdb, u_pattern, options, freqpatterns):
     return
 
 def prefixspan(u_db, u_options):
-    """"""
+    """Prefixspan entry call, takes a database in the null separator format and a dictionary of options and returns frequent patterns and their frequency."""
     p_db, z2i, ibag = __parse_db__(u_db)
     options = __parse_options__(u_options)
     candidates = __ffi__(options['threshold'], ibag)
