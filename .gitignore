@@ -8,6 +8,12 @@ Desktop.ini
 # Recycle Bin used on file shares
 $RECYCLE.BIN/
 
+# Untracked Files
+	IBM_Quest_data_generator/
+	
+# Testing Files
+	
+
 # Windows Installer files
 *.cab
 *.msi
