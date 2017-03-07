@@ -9,9 +9,9 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # Untracked Files
-	IBM_Quest_data_generator/*
-	ResultFiles/*
-	TestFiles/*
+	IBM_Quest_data_generator/
+	ResultFiles/
+	TestFiles/
 	
 # Testing Files
 	*C01T5S250I003SP5.txt
