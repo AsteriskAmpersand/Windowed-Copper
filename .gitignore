@@ -12,6 +12,18 @@ $RECYCLE.BIN/
 	IBM_Quest_data_generator/
 	
 # Testing Files
+	*C01T5S250I003SP5.txt
+	*C10T8S8I8.txt
+	*C10T8S8I8-FF.txt
+	*CrossVal Known Correct.txt
+	*N8S250T20N004S5.pat
+	*N8S250T20N004S5.txt
+	*Results.txt
+	*ResultsGap.txt
+	*ResultsWindowGap.txt
+	*S10SP2PL8nI5000.txt
+	*Signs.txt
+	*Test.txt
 	
 
 # Windows Installer files
