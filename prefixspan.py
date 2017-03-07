@@ -8,7 +8,7 @@ Contact Details: a.guevarac@up.edu.pe
 Institution: Universidad del Pacifico|University of the Pacific
 """
 from seqpattern import Pattern
-from dbpointer import DBPointer, CopperPointer, WindowGapPointer
+from dbpointer import DBPointer, CopperPointer, WindowGapPointer, WinCopPointer
 from infinity import Infinity
 import logiceval
 
@@ -131,6 +131,6 @@ def prefixspan(u_db, u_options):
     for atomicseq in candidates:
             __prefixspan__(pointerdb, atomicseq, options, freqpatterns)
     if 'logic' in options:
-        freqpatterns = list(filter(lambda x: options['logic'](x) and options['minSize']<=len(x) and options['minSseq']<=x.size(), freqpatterns))
+        freqpatterns = list(filter(lambda x: options['logic'](x[0]) and options['minSize']<=len(x[0]) and options['minSseq']<=x[0].size(), freqpatterns))
     return freqpatterns
     

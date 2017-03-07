@@ -19,7 +19,7 @@ class DBPointer(object):
         self.__last__ = -1
 
     def partialcopy(self):
-        new = DBPointer(self.__entry__, self.__origin__)
+        new = self.__class__(self.__entry__, self.__origin__)
         return new
         
     def project(self, pattern, options):
@@ -113,17 +113,17 @@ def __intervaln__(intervallist1, intervallist2):
 
 class WindowGapPointer(DBPointer):
     def __init__(self, zid, db):
-        DBPointer.__init__(self, zid, db)
+        super(WindowGapPointer, self).__init__(zid, db)
         self.__progenitor__ = []
         
     def partialcopy(self):
-        new = WindowGapPointer(self.__entry__, self.__origin__)
+        new = super(WindowGapPointer, self).partialcopy()
         new.__progenitor__ = self.__progenitor__
         return new
-#RETHINK ALL OF THIS!    
+   
     def project(self, pattern, options):
         if self.__last__ == -1:
-            result = DBPointer.project(self, pattern, options)
+            result = super(WindowGapPointer, self).project(pattern, options)
             return result
         result = self.partialcopy()
         result.__last__ = pattern.last()
@@ -153,30 +153,51 @@ class WindowGapPointer(DBPointer):
             for item in self.__origin__[self.__entry__][pos]:
                 candidates.add(item)
         return candidates
-#UP UNTIL HERE
         
 class CopperPointer (DBPointer):
     def __init__(self, zid, db):
-        DBPointer.__init__(self, zid, db)
+        super(CopperPointer, self).__init__(zid, db)
         self.__pattern__ = None
 
-    def partialcopy(self):
-        new = CopperPointer(self.__entry__, self.__origin__)
-        return new
-
     def project(self, pattern, options):
-        result = DBPointer.project(self, pattern, options)
+        result = super(CopperPointer, self).project(pattern, options)
         result.__pattern__ = pattern
         return result
     
     def appendcandidates(self, options):
         candidates = []
         if self.__pattern__.size()>=options['minSseq'] and len(self.__pattern__)<options['maxSize']:
-            candidates = DBPointer.appendcandidates(self, options)
+            candidates = super(CopperPointer, self).appendcandidates(options)
         return candidates
                  
     def assemblecandidates(self,options):
         candidates = []
         if self.__pattern__.size()<options['maxSseq']:
-            candidates = DBPointer.assemblecandidates(self, options)
+            candidates = super(CopperPointer, self).assemblecandidates(options)
         return candidates    
+
+class WinCopPointer (CopperPointer, WindowGapPointer):
+    def __init__(self, zid, db):
+        super(WinCopPointer, self).__init__(zid, db)
+
+    def partialcopy(self):
+        new = WinCopPointer(self.__entry__, self.__origin__)
+        new.__progenitor__ = self.__progenitor__
+        return new        
+
+    def project(self, pattern, options):
+        result = WindowGapPointer.project(self, pattern, options)
+        result.__pattern__ = pattern
+        return result
+    
+    def appendcandidates(self, options):
+        candidates = []
+        if self.__pattern__.size()>=options['minSseq'] and len(self.__pattern__)<options['maxSize']:
+            candidates = WindowGapPointer.appendcandidates(self, options)
+        return candidates
+                 
+    def assemblecandidates(self,options):
+        candidates = []
+        if self.__pattern__.size()<options['maxSseq']:
+            candidates = WindowGapPointer.assemblecandidates(self, options)
+        return candidates          

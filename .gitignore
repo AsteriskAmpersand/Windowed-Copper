@@ -9,7 +9,9 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # Untracked Files
-	IBM_Quest_data_generator/
+	IBM_Quest_data_generator/*
+	ResultFiles/*
+	TestFiles/*
 	
 # Testing Files
 	*C01T5S250I003SP5.txt
@@ -18,9 +20,7 @@ $RECYCLE.BIN/
 	*CrossVal Known Correct.txt
 	*N8S250T20N004S5.pat
 	*N8S250T20N004S5.txt
-	*Results.txt
-	*ResultsGap.txt
-	*ResultsWindowGap.txt
+	*Results*
 	*S10SP2PL8nI5000.txt
 	*Signs.txt
 	*Test.txt

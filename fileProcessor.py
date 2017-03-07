@@ -71,30 +71,4 @@ def minOneFormater(moDB):
     for line, entry in enumerate(moDB):
         splitted = entry.rstrip().replace("-1","\0").replace("-2","").split('\0')[:-1]
         patternDB.append(str(line)+unsafeJoin(map(lambda x: x.lstrip().rstrip().replace(' ','|')+"\0", splitted),'\0')[:-1])
-    return patternDB
-
-import prefixspan as ps
-import time
-import sys
-import math
-sys.setrecursionlimit(10000)
-
-if __name__ == '__main__':
-    u_db = open('C01T5S250I003SP5.txt', 'r')#C10T8S8I8
-    s_db = asciiFormater(u_db)
-    ratio = 0.75#0.003
-    options = {'threshold':int(math.ceil(len(s_db)*ratio)), 'gap':2, 'window':10}
-    string = '' if 'window' not in options else 'Window'
-    string += '' if 'gap' not in options else 'Gap'
-    print "Min Support: "+str(int(math.ceil(len(s_db)*ratio)))
-    start = time.time()
-    res = ps.prefixspan(s_db, options)
-    end = time.time()
-    print "Patterns Found: " + str(len(res))
-    print "Time Taken: " + str(end - start)
-    out = open('Results'+string+'.txt','w')
-    for pat in sorted(res, key=lambda x: x[1]):
-        out.write(str(pat)+'\n')
-    out.close()
-    print "Options Used: " + str(options)
-    
+    return patternDB  
