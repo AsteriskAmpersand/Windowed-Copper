@@ -14,6 +14,37 @@ def unsafeJoin(x, base=''):
         string+=i
     return string
 
+import csv
+def writeAndReturn(he, entries, lookup):
+    if he[1]:
+        lookup.append(he)
+        entries[he[0]+'|'+he[1]]=str(len(entries))+'|'
+        return entries[he[0]+'|'+he[1]]
+
+def csvReader(csvFile):
+    #The conversion to numeric from class and disc. ops should NOT be done here
+    temppDB = {}
+    reader = csv.reader(csvFile)
+    headers = reader.next()
+    types = reader.next()
+    meta = reader.next()
+    entries = {}
+    lookup = []
+    entryToCode = lambda he: str(entries[he[0]+'|'+he[1]]) if he[0]+'|'+he[1] in entries else writeAndReturn(he, entries, lookup)
+    for entry in reader:
+        result = []
+        for he in zip(headers[1:], entry[1:]):
+            if he[1]:
+                result.append(entryToCode(he))  
+        if entry[0] not in temppDB:
+            temppDB[entry[0]]=[]
+        temppDB[entry[0]].append(unsafeJoin(result,'\0')[:-1])
+    pDB = []
+    for i, key in zip(range(0,len(temppDB)), temppDB.keys()):
+        pDB.append(str(i)+unsafeJoin(temppDB[key],''))
+    return pDB, lookup
+        
+        
 def asciiFormater(asciiFile):
     pDB = []
     for index, line in enumerate(asciiFile):
@@ -71,4 +102,4 @@ def minOneFormater(moDB):
     for line, entry in enumerate(moDB):
         splitted = entry.rstrip().replace("-1","\0").replace("-2","").split('\0')[:-1]
         patternDB.append(str(line)+unsafeJoin(map(lambda x: x.lstrip().rstrip().replace(' ','|')+"\0", splitted),'\0')[:-1])
-    return patternDB  
+    return patternDB

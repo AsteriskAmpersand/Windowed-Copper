@@ -1,8 +1,8 @@
 """
 Pointer to Database class for use with Prefixspan.
 Different classes correspond to different functionality and capabilities.
-DBPointer - Prefixspan, CopperPointer - COPPER, WindowGap - Window/Gap
-WinCop - Combined Copper and WindowGap
+DBPointer - Prefixspan, CopperPointer - COPPER,
+GapCop - Combined Copper and Gap, WindowPointer - Window Features combined with all of the above
 
 Author: Agustin Guevara-Cogorno
 Contact Details: a.guevarac@up.edu.pe
@@ -27,7 +27,9 @@ class DBPointer(object):
         result.__last__ = pattern.last()
         if pattern.appended():
             result.__positions__ = [index+self.__positions__[0]+1
-                                            for index, itemset in enumerate(self.__origin__[self.__entry__][self.__positions__[0]+1:])
+                                            #enumerate(self.__origin__[self.__entry__][self.__positions__[0]+1:])
+                                            #=enumerate((self.__origin__[self.__entry__][i] for i in range(self.__positions__[0]+1, len(self.__origin__[self.__entry__]))))
+                                            for index, itemset in enumerate((self.__origin__[self.__entry__][i] for i in range(self.__positions__[0]+1, len(self.__origin__[self.__entry__]))))
                                             if pattern.last() in itemset]
         else:
             result.__positions__ = list(filter(lambda pos: pattern.last() in self.__origin__[result.__entry__][pos]
@@ -36,7 +38,8 @@ class DBPointer(object):
 
     def appendcandidates(self, options):
         candidates = set()
-        for itemset in self.__origin__[self.__entry__][self.__positions__[0]+1:]:
+                        #self.__origin__[self.__entry__][self.__positions__[0]+1:]
+        for itemset in (self.__origin__[self.__entry__][i] for i in range(self.__positions__[0]+1, len(self.__origin__[self.__entry__]))):
             for item in itemset:
                 candidates.add(item)
         return candidates
@@ -111,27 +114,25 @@ def __intervaln__(intervallist1, intervallist2):
     return result
     
 
-class WindowGapPointer(DBPointer):
+#WRONG requires rewrite of window. Currently consider [a] [b] [a c] [b d] [c] win =2
+#Window instead should make the DB a partition for each starting point and each time it does projection candidates
+#when no window partition it's a single partition [[DB]]
+#when window is present the algorithm changes... almost completely since one must keep track of the starting points per each repartitioning of each entry
+# {[a] [b] [a c]} {[a c] [b d] [c]}
+# and last locations pointings must also be an array of arrays of positions
+
+class GapPointer(DBPointer):
     def __init__(self, zid, db):
-        super(WindowGapPointer, self).__init__(zid, db)
-        self.__progenitor__ = []
-        
-    def partialcopy(self):
-        new = super(WindowGapPointer, self).partialcopy()
-        new.__progenitor__ = self.__progenitor__
-        return new
-   
-    def project(self, pattern, options):
+        super(GapPointer, self).__init__(zid, db)
+          
+    def project(self, pattern, options):        
         if self.__last__ == -1:
-            result = super(WindowGapPointer, self).project(pattern, options)
+            result = super(GapPointer, self).project(pattern, options)
             return result
         result = self.partialcopy()
         result.__last__ = pattern.last()
         if pattern.appended():
-            if not self.__progenitor__:
-                result.__progenitor__ = self.__positions__
-            ranges = __intervaln__(__intervalu__(options['window'](result.__progenitor__, len(self.__origin__[self.__entry__]))),
-                                      __intervalu__(options['gap'](self.__positions__, len(self.__origin__[self.__entry__]))))
+            ranges = __intervalu__(options['gap'](self.__positions__, len(self.__origin__[self.__entry__])))
             rangeiter = itertools.chain.from_iterable((range(interval[0], interval[1]) for interval in ranges))
             result.__positions__ = [index
                                         for index, itemset in ((pos, self.__origin__[self.__entry__][pos]) for pos in rangeiter)
@@ -143,11 +144,7 @@ class WindowGapPointer(DBPointer):
 
     def appendcandidates(self, options):
         candidates = set()
-        progenitor = self.__progenitor__
-        if not progenitor:
-            progenitor = self.__positions__
-        ranges = __intervaln__(__intervalu__(options['window'](progenitor, len(self.__origin__[self.__entry__]))),
-                                  __intervalu__(options['gap'](self.__positions__, len(self.__origin__[self.__entry__]))))
+        ranges = __intervalu__(options['gap'](self.__positions__, len(self.__origin__[self.__entry__])))
         rangeiter = itertools.chain.from_iterable((range(interval[0], min(interval[1],len(self.__origin__[self.__entry__]))) for interval in ranges))
         for pos in rangeiter:
             for item in self.__origin__[self.__entry__][pos]:
@@ -176,28 +173,98 @@ class CopperPointer (DBPointer):
             candidates = super(CopperPointer, self).assemblecandidates(options)
         return candidates    
 
-class WinCopPointer (CopperPointer, WindowGapPointer):
+class GapCopPointer (CopperPointer, GapPointer):
     def __init__(self, zid, db):
-        super(WinCopPointer, self).__init__(zid, db)
+        super(GapCopPointer, self).__init__(zid, db)
 
     def partialcopy(self):
-        new = WinCopPointer(self.__entry__, self.__origin__)
-        new.__progenitor__ = self.__progenitor__
+        new = GapCopPointer(self.__entry__, self.__origin__)
         return new        
 
     def project(self, pattern, options):
-        result = WindowGapPointer.project(self, pattern, options)
+        result = GapPointer.project(self, pattern, options)
         result.__pattern__ = pattern
         return result
     
     def appendcandidates(self, options):
         candidates = []
         if self.__pattern__.size()>=options['minSseq'] and len(self.__pattern__)<options['maxSize']:
-            candidates = WindowGapPointer.appendcandidates(self, options)
+            candidates = GapPointer.appendcandidates(self, options)
         return candidates
                  
     def assemblecandidates(self,options):
         candidates = []
         if self.__pattern__.size()<options['maxSseq']:
-            candidates = WindowGapPointer.assemblecandidates(self, options)
+            candidates = GapPointer.assemblecandidates(self, options)
         return candidates          
+
+class SegmentIterator(object):
+    def __init__(self, source, start, end):
+        self.__source__ = source
+        self.__pos__ = start
+        self.__end__ = min(end, len(source))
+    def __iter__(self):
+        return self
+    def next(self):
+        if self.__pos__ < self.__end__:
+            n = self.__source__[self.__pos__]
+            self.__pos__+=1
+            return n
+        else:
+            raise StopIteration
+    
+
+class StaticListSegment(object):
+    def __init__(self, source, start, end):
+        self.__source__ = source
+        self.__start__ = start
+        self.__end__ = min(end, len(source))
+        return
+    def __getitem__(self, key):
+        assert key < len(self)
+        return self.__source__[key+self.__start__]
+    def __iter__(self):
+        return SegmentIterator(self.__source__, self.__start__, self.__end__)
+    def __len__(self):
+        return self.__end__ - self.__start__
+
+    
+
+class WindowPointer(object):
+    def __init__(self, zid, db, pointerclass):
+        self.__origin__ = db
+        self.__entry__ = zid
+        self.__pclass__ = pointerclass
+        self.__partitioned__ = False
+        return
+        
+    def __partialcopy__(self):
+        new = WindowPointer(self.__entry__, self.__origin__, self.__pclass__)
+        return new
+    
+    def project(self, pattern, options):
+        result = self.__partialcopy__()
+        if not self.__partitioned__:
+            partition = []
+            for ocurrence in (pos for pos, i in enumerate(self.__origin__[self.__entry__]) if pattern.last() in i):
+                    partition.append(StaticListSegment(self.__origin__[self.__entry__], ocurrence, ocurrence+options['window']) )
+                    if ocurrence+options['window']>=len(self.__origin__[self.__entry__]):
+                        break                              
+            self.__pointers__ = [self.__pclass__(z_id, partition) for z_id in range(len(partition))]
+        result.__pointers__ = [w for w in (x.project(pattern, options) for x in self.__pointers__) if w]
+        result.__partitioned__ = True
+        return result
+
+    def appendcandidates(self, options):
+        assert self.__partitioned__
+        candidates = reduce(lambda x,y: x|y, (p.appendcandidates(options) for p in self.__pointers__), set())
+        return candidates
+              
+    def assemblecandidates(self,options):
+        assert self.__partitioned__
+        candidates = reduce(lambda x,y: x|y, (p.assemblecandidates(options) for p in self.__pointers__), set())
+        return candidates
+
+    def __nonzero__(self):
+        assert self.__partitioned__
+        return bool(self.__pointers__)

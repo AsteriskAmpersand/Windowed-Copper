@@ -8,7 +8,7 @@ Contact Details: a.guevarac@up.edu.pe
 Institution: Universidad del Pacifico|University of the Pacific
 """
 from seqpattern import Pattern
-from dbpointer import DBPointer, CopperPointer, WindowGapPointer, WinCopPointer
+from dbpointer import DBPointer, CopperPointer, GapPointer, GapCopPointer, WindowPointer
 from infinity import Infinity
 import logiceval
 
@@ -62,21 +62,19 @@ def __parse_options__(options):
         if 'maxSize' not in options:
             options['maxSize'] = Infinity()
     #Window
-    if any( param in options for param in ['window','gap']):
-        options['DBPointer'] = WindowGapPointer
-        if 'gap' in options:
-            gap = options['gap']+1
-            options['gap'] = lambda x, y: map(lambda z: [z+1, min(z+gap+1, y)], x)
-        else:
-            options['gap'] = lambda x, y: [[x[0]+1, y]]
-        if 'window' in options:
-            window = options['window']
-            options['window'] = lambda x, y: map(lambda z: [z+1, min(z+window+1, y)], x)
-        else:
-            options['window'] = lambda x, y: [[0, y]]
-    #WinCopper
+    if 'gap' in options:
+        options['DBPointer'] = GapPointer
+        gap = options['gap']+1
+        options['gap'] = lambda x, y: map(lambda z: [z+1, min(z+gap+1, y)], x)
+
+    #GapCopper
     if 'logic' in options and 'gap' in options:
-        options['DBPointer'] = WinCopPointer
+        options['DBPointer'] = GapCopPointer
+
+    if 'window' in options:
+        dbp = options['DBPointer']
+        options['DBPointer'] = lambda z,d: WindowPointer(z,d, dbp)
+        
     return options
 
 def __ffi__(support, itembag):
@@ -129,7 +127,7 @@ def prefixspan(u_db, u_options):
     candidates = list(map(lambda x: options['Pattern']().assemble(x), candidates))
     freqpatterns = []
     for atomicseq in candidates:
-            __prefixspan__(pointerdb, atomicseq, options, freqpatterns)
+        __prefixspan__(pointerdb, atomicseq, options, freqpatterns)
     if 'logic' in options:
         freqpatterns = list(filter(lambda x: options['logic'](x[0]) and options['minSize']<=len(x[0]) and options['minSseq']<=x[0].size(), freqpatterns))
     return freqpatterns

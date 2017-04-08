@@ -71,3 +71,16 @@ class Pattern(object):
 
     def __repr__(self):
         return str(self)
+
+    def extended_representation(self, func):
+        string = ''
+        for iset in self.__tail__+[self.__head__]:
+            string+='<'
+            buffr = ''
+            for item in iset:
+                buffr+=str(func(item))+', '
+            if buffr:
+                string+=buffr[:-2]+'>'
+            else:
+                string+='>'
+        return string        

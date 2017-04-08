@@ -12,6 +12,7 @@ $RECYCLE.BIN/
 IBM_Quest_data_generator/
 ResultFiles/
 TestFiles/
+*Lazo*
 	
 # Testing Files
 *C01T5S250I003SP5.txt
@@ -24,7 +25,6 @@ TestFiles/
 *S10SP2PL8nI5000.txt
 *Signs.txt
 *Test.txt
-	
 
 # Windows Installer files
 *.cab
